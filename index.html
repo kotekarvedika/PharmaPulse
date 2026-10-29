@@ -1057,13 +1057,15 @@
   <script>
       // Ensure token is checked before doing anything else
       (function checkAuth() {
-        const user = API.getLoggedInUser();
-        if (!user && window.location.pathname !== '/login.html') {
-          window.location.href = 'login.html';
-        } else if (user) {
-          const usernameEl = document.getElementById('logged-in-username');
-          if (usernameEl) {
-            usernameEl.textContent = user.username + (user.role === 'staff' ? '' : ` (${user.role})`);
+        if (typeof API !== 'undefined' && typeof API.getLoggedInUser === 'function') {
+          const user = API.getLoggedInUser();
+          if (!user && !window.location.pathname.endsWith('login.html')) {
+            window.location.href = 'login.html';
+          } else if (user) {
+            const usernameEl = document.getElementById('logged-in-username');
+            if (usernameEl) {
+              usernameEl.textContent = user.username + (user.role === 'staff' ? '' : ` (${user.role})`);
+            }
           }
         }
       })();

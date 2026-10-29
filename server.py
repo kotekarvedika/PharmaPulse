@@ -7,11 +7,26 @@ import jwt
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(APP_DIR, 'pharmapulse.db')
 
-app = Flask(__name__, static_folder=APP_DIR, static_url_path='')
-app.config['SECRET_KEY'] = 'pharmapulse_super_secret_key'
-CORS(app)
+# Support Vercel serverless /tmp writable storage or custom persistent DB_PATH
+IS_VERCEL = bool(os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'))
+if IS_VERCEL or os.environ.get('USE_TMP_DB'):
+    TMP_DIR = '/tmp'
+    TMP_DB = os.path.join(TMP_DIR, 'pharmapulse.db')
+    SEED_DB = os.path.join(APP_DIR, 'pharmapulse.db')
+    if not os.path.exists(TMP_DB) and os.path.exists(SEED_DB):
+        try:
+            import shutil
+            shutil.copy2(SEED_DB, TMP_DB)
+        except Exception as e:
+            print(f"Seed DB copy warning: {e}")
+    DB_PATH = TMP_DB
+else:
+    DB_PATH = os.environ.get('DB_PATH', os.path.join(APP_DIR, 'pharmapulse.db'))
+
+app = Flask(__name__, static_folder=None)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pharmapulse_super_secret_key_prod_2026')
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -149,6 +164,14 @@ def init_db():
     if cursor.fetchone()[0] == 0:
         seed_initial_data(conn)
 
+    # Seed default admin user if users table is empty
+    cursor.execute("SELECT COUNT(*) FROM users")
+    if cursor.fetchone()[0] == 0:
+        default_hash = generate_password_hash('admin123', method='pbkdf2:sha256')
+        cursor.execute("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)",
+                       ('admin', 'admin@pharmapulse.com', default_hash, 'admin'))
+        conn.commit()
+
     conn.close()
 
 def seed_initial_data(conn):
@@ -217,13 +240,22 @@ def seed_initial_data(conn):
 # API ROUTES
 # ========================================================
 
+BLOCKED_FILES = {'pharmapulse.db', 'server.py', 'start_server.bat', 'requirements.txt', '.env', '.gitignore', 'vercel.json', 'procfile'}
+
 @app.route('/')
 def serve_index():
     return send_from_directory(APP_DIR, 'index.html')
 
 @app.route('/<path:path>')
 def serve_static(path):
-    if os.path.exists(os.path.join(APP_DIR, path)):
+    # Security: never serve database files, python source code or sensitive config files
+    normalized = path.replace('\\', '/').lower().strip('/')
+    filename = os.path.basename(normalized)
+    if filename in BLOCKED_FILES or normalized.endswith('.db') or normalized.endswith('.py') or normalized.endswith('.env'):
+        return jsonify({"error": "Access forbidden"}), 403
+
+    target_file = os.path.join(APP_DIR, path)
+    if os.path.isfile(target_file):
         return send_from_directory(APP_DIR, path)
     return send_from_directory(APP_DIR, 'index.html')
 
@@ -300,7 +332,8 @@ def login():
 def health_check():
     return jsonify({
         "status": "connected",
-        "database": "SQLite (pharmapulse.db)",
+        "database": f"SQLite ({os.path.basename(DB_PATH)})",
+        "environment": "vercel_serverless" if IS_VERCEL else "standard",
         "timestamp": datetime.now().isoformat()
     })
 
@@ -658,8 +691,54 @@ def reset_database():
     init_db()
     return jsonify({"success": True, "message": "Database reset to default dataset."})
 
-if __name__ == '__main__':
+# 9. LOG OCR SCAN EVENT
+@app.route('/api/ocr/log', methods=['POST'])
+@token_required
+def log_ocr_scan():
+    data = request.json or {}
+    raw_text = data.get('raw_ocr_text', '')
+    detected_name = data.get('detected_name', '')
+    detected_batch = data.get('detected_batch', '')
+    detected_mfd = data.get('detected_mfd', '')
+    detected_exp = data.get('detected_exp', '')
+    transferred = 1 if data.get('transferred_to_stock') else 0
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO ocr_scan_logs (raw_ocr_text, detected_name, detected_batch, detected_mfd, detected_exp, transferred_to_stock)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (raw_text, detected_name, detected_batch, detected_mfd, detected_exp, transferred))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "message": "OCR scan logged successfully."})
+
+# 10. SERVER-SIDE OCR SCAN (Backend alternative / verification)
+@app.route('/api/ocr/scan', methods=['POST'])
+@token_required
+def ocr_scan_server():
+    if 'image' not in request.files and 'file' not in request.files:
+        return jsonify({"error": "No image file provided"}), 400
+    file = request.files.get('image') or request.files.get('file')
+    if not file or file.filename == '':
+        return jsonify({"error": "Empty file"}), 400
+
+    try:
+        from PIL import Image
+        import pytesseract
+        img = Image.open(file.stream)
+        text = pytesseract.image_to_string(img)
+        return jsonify({"success": True, "raw_text": text})
+    except Exception as e:
+        return jsonify({"error": f"OCR processing error: {str(e)}"}), 500
+
+# Automatically initialize database schema on WSGI / serverless import
+try:
     init_db()
+except Exception as e:
+    print(f"Database auto-init warning: {e}")
+
+if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"=======================================================")
     print(f" PharmaPulse SQL Backend Server Running on Port {port}")

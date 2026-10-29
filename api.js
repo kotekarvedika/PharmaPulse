@@ -4,16 +4,29 @@
  */
 
 const API = {
-  baseUrl: window.location.port === '5000' 
-    ? '/api' 
-    : 'http://localhost:5000/api',
+  baseUrl: (() => {
+    // 1. Explicit window or localStorage override
+    if (typeof window !== 'undefined') {
+      if (window.PHARMAPULSE_API_URL) return window.PHARMAPULSE_API_URL;
+      const stored = localStorage.getItem('pharmapulse_api_url');
+      if (stored) return stored;
+
+      // 2. If running standalone file:// or secondary dev port (e.g., Live Server :5500), point to port 5000
+      if (window.location.protocol === 'file:' || 
+          (window.location.hostname === 'localhost' && window.location.port !== '5000' && window.location.port !== '')) {
+        return 'http://localhost:5000/api';
+      }
+    }
+    // 3. In production (Vercel, Render) or Flask port 5000: relative /api works seamlessly
+    return '/api';
+  })(),
   
   isServerConnected: false,
 
   getAuthHeaders(extraHeaders = {}) {
     const token = localStorage.getItem('auth_token');
     if (!token) {
-      if (window.location.pathname !== '/login.html') {
+      if (!window.location.pathname.endsWith('login.html')) {
         window.location.href = 'login.html';
       }
       return extraHeaders;
@@ -22,9 +35,11 @@ const API = {
   },
 
   handleAuthError(res) {
-    if (res.status === 401) {
+    if (res && res.status === 401) {
       localStorage.removeItem('auth_token');
-      window.location.href = 'login.html';
+      if (!window.location.pathname.endsWith('login.html')) {
+        window.location.href = 'login.html';
+      }
       return true;
     }
     return false;
@@ -35,7 +50,7 @@ const API = {
     if (!token) return null;
     try {
       const payloadBase64 = token.split('.')[1];
-      const decodedPayload = atob(payloadBase64);
+      const decodedPayload = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
       return JSON.parse(decodedPayload);
     } catch (e) {
       return null;
@@ -49,7 +64,7 @@ const API = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Login failed');
       localStorage.setItem('auth_token', data.token);
       return data;
@@ -60,7 +75,7 @@ const API = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Signup failed');
       return data;
     },
@@ -75,7 +90,7 @@ const API = {
       const res = await fetch(`${this.baseUrl}/health`, { 
         method: 'GET',
         headers: { 'Accept': 'application/json' },
-        signal: AbortSignal.timeout(2500)
+        signal: AbortSignal.timeout(4000)
       });
       if (res.ok) {
         const data = await res.json();
@@ -84,9 +99,7 @@ const API = {
         return true;
       }
     } catch (err) {
-      this.isServerConnected = false;
-      this.updateStatusBadge(false);
-      return false;
+      console.warn("DB connection check failed:", err);
     }
     this.isServerConnected = false;
     this.updateStatusBadge(false);
@@ -235,5 +248,22 @@ const API = {
       console.error("Database reset failed:", err);
       throw err;
     }
+  },
+
+  // 8. Log OCR detection results
+  async logOCRScan(scanData) {
+    if (!this.isServerConnected) return null;
+    try {
+      const res = await fetch(`${this.baseUrl}/ocr/log`, {
+        method: 'POST',
+        headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(scanData)
+      });
+      if (this.handleAuthError(res)) return null;
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("OCR scan log failed:", e);
+    }
+    return null;
   }
 };

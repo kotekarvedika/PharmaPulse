@@ -2263,6 +2263,17 @@ async function handleOCRFile(file) {
     document.getElementById('ocr-raw-text').value = fields.raw;
     setOCRProgress(100, 'OCR scan completed');
     if (resultsWrap) resultsWrap.classList.remove('hidden');
+
+    if (typeof API !== 'undefined' && typeof API.logOCRScan === 'function') {
+      API.logOCRScan({
+        raw_ocr_text: fields.raw,
+        detected_name: fields.name,
+        detected_batch: fields.batch,
+        detected_mfd: fields.mfd,
+        detected_exp: fields.exp,
+        transferred_to_stock: false
+      });
+    }
   } catch (error) {
     console.error('OCR error:', error);
     setOCRProgress(0, 'OCR failed');
