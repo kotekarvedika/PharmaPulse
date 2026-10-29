@@ -1,5 +1,27 @@
 {
   "version": 2,
+  "redirects": [
+    {
+      "source": "/pharmapulse.db",
+      "destination": "/login.html",
+      "permanent": false
+    },
+    {
+      "source": "/server.py",
+      "destination": "/login.html",
+      "permanent": false
+    },
+    {
+      "source": "/requirements.txt",
+      "destination": "/login.html",
+      "permanent": false
+    },
+    {
+      "source": "/Procfile",
+      "destination": "/login.html",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
