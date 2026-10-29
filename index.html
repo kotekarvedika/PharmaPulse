@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PharmaPulse — Smart Pharmacy & Expiry Management System</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            neonGreen: '#00F59B',
+            neonCrimson: '#FF2E63',
+            neonAmber: '#FFB800',
+            neonBlue: '#00D2FF',
+            darkObsidian: '#070b14',
+            darkSlate: '#0f172a'
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+            space: ['"Space Grotesk"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <!-- OCR Scanner (added feature) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="bg-[#070b14] text-slate-100 antialiased selection:bg-[#00D2FF] selection:text-black">
+
+  <!-- Ambient Glow Effects -->
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+  <div class="ambient-glow-3"></div>
+
+  <!-- Toast Notification Stack -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-auto"></div>
+
+  <div class="flex min-h-screen relative z-10">
+
+    <!-- ========================================================================= -->
+    <!-- STICKY SIDEBAR -->
+    <!-- ========================================================================= -->
+    <aside
+      class="w-64 bg-[#0a0f1d]/90 backdrop-blur-2xl border-r border-slate-800/80 p-5 flex flex-col justify-between shrink-0 hidden md:flex sticky top-0 h-screen z-30">
+      <div>
+        <!-- Brand Logo -->
+        <div class="flex items-center gap-3 pb-6 border-b border-slate-800/80">
+          <div
+            class="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#00D2FF] via-[#00F59B] to-[#FF2E63] p-0.5 shadow-lg shadow-cyan-500/20">
+            <div class="w-full h-full bg-[#0a0f1d] rounded-[10px] flex items-center justify-center">
+              <i class="fa-solid fa-heart-pulse text-lg text-[#00F59B] animate-pulse"></i>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h1 class="font-space font-black text-lg tracking-tight text-white">PHARMA<span
+                  class="text-[#00D2FF]">PULSE</span></h1>
+              <span
+                class="text-[9px] font-mono-code font-bold uppercase px-1.5 py-0.2 rounded bg-cyan-500/20 text-[#00D2FF] border border-cyan-500/30">v2.4</span>
+            </div>
+            <p class="text-[10px] font-semibold text-slate-400 tracking-wider uppercase">Smart Expiry & POS</p>
+          </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="mt-6 space-y-1.5">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2 font-mono-code">Main
+            Workspace</div>
+
+          <a href="#dashboard-overview"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs text-white bg-slate-800/80 border border-slate-700/60 shadow-sm transition-all hover:border-[#00D2FF]/50 group">
+            <i class="fa-solid fa-chart-pie text-[#00D2FF] group-hover:scale-110 transition-transform"></i>
+            <span>Dashboard Overview</span>
+          </a>
+
+          <a href="#expiry-tracker-section" onclick="setFilterTab('expiring_soon')"
+            class="flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all group">
+            <div class="flex items-center gap-3">
+              <i class="fa-solid fa-hourglass-half text-[#FFB800] group-hover:scale-110 transition-transform"></i>
+              <span>Smart Expiry Tracker</span>
+            </div>
+            <span id="badge-nav-expiring"
+              class="px-1.5 py-0.2 text-[10px] font-mono-code font-bold rounded-full bg-red-500/20 text-[#FF2E63] border border-red-500/30">Alert</span>
+          </a>
+
+          <a href="#pos-billing-section"
+            class="flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all group">
+            <div class="flex items-center gap-3">
+              <i class="fa-solid fa-cash-register text-[#00F59B] group-hover:scale-110 transition-transform"></i>
+              <span>Quick Billing & POS</span>
+            </div>
+            <span class="text-[10px] font-mono-code font-bold text-emerald-400">FEFO</span>
+          </a>
+
+          <a href="#analytics-section"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all group">
+            <i class="fa-solid fa-chart-line text-purple-400 group-hover:scale-110 transition-transform"></i>
+            <span>Sales & Loss Analytics</span>
+          </a>
+
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 pt-4 mb-2 font-mono-code">
+            Compliance & Inventory</div>
+
+          <button onclick="openModal('add-stock-modal')"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all text-left">
+            <i class="fa-solid fa-plus-circle text-cyan-400"></i>
+            <span>Add Batch / Stock</span>
+          </button>
+
+          <button onclick="exportInventoryCSV()"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all text-left">
+            <i class="fa-solid fa-file-csv text-emerald-400"></i>
+            <span>Export Audit CSV</span>
+          </button>
+
+          <!-- OCR Scanner (added feature only) -->
+          <button onclick="openOCRScanner()"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all text-left">
+            <i class="fa-solid fa-camera-retro text-purple-400"></i>
+            <span>OCR Scanner</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Pharmacist Status Footer -->
+      <div class="pt-4 border-t border-slate-800/80 space-y-3">
+        <!-- Live Shift Indicator -->
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+          <div class="flex items-center justify-between text-[11px] mb-1">
+            <span class="text-slate-400">Active Shift:</span>
+            <span class="flex items-center gap-1 font-bold text-emerald-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Online
+            </span>
+          </div>
+          <div class="font-bold text-white flex items-center gap-1.5">
+            <i class="fa-solid fa-user-doctor text-cyan-400 text-xs"></i>
+            <span id="logged-in-username">Staff Member</span>
+          </div>
+          <div class="text-[10px] font-mono-code text-slate-400 mt-1">Lic: #PH-4920 &bull; FEFO Guard ON</div>
+        </div>
+
+        <button onclick="API.auth.logout()"
+          class="w-full py-2 px-3 rounded-lg text-[11px] font-mono-code text-red-400 hover:text-white hover:bg-red-900/40 transition-colors border border-red-900/20 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-sign-out-alt"></i> Secure Logout
+        </button>
+
+        <button onclick="resetToDefaultData()"
+          class="w-full py-2 px-3 rounded-lg text-[11px] font-mono-code text-slate-400 hover:text-white hover:bg-slate-800 transition-colors border border-slate-800 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-rotate-left"></i> Reset Demo Database
+        </button>
+      </div>
+    </aside>
+
+    <!-- ========================================================================= -->
+    <!-- MAIN CONTENT AREA -->
+    <!-- ========================================================================= -->
+    <main class="flex-1 flex flex-col min-w-0">
+
+      <!-- TOP ACTION HEADER -->
+      <header
+        class="sticky top-0 z-20 bg-[#070b14]/85 backdrop-blur-xl border-b border-slate-800/80 px-4 md:px-8 py-3.5 flex items-center justify-between gap-4">
+        <!-- Left: Search Bar -->
+        <div class="flex-1 max-w-lg relative">
+          <div class="relative">
+            <i
+              class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input id="global-search-input" type="text"
+              placeholder="Search medicine, generic formula, batch (e.g. PCM-902), rack..."
+              class="w-full pl-9 pr-14 py-2 rounded-xl text-xs glass-input placeholder:text-slate-400 font-medium">
+            <span
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono-code px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+              Ctrl+K
+            </span>
+          </div>
+        </div>
+
+        <!-- Right: Actions & Clock -->
+        <div class="flex items-center gap-2.5 md:gap-3">
+          <!-- Audio Feedback Toggle -->
+          <button id="sound-toggle-btn" title="Toggle Sound Chimes"
+            class="p-2 w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white flex items-center justify-center transition-all">
+            <i class="fa-solid fa-volume-high text-cyan-400"></i>
+          </button>
+
+          <!-- Live Clock -->
+          <div
+            class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs font-mono-code text-slate-300">
+            <i class="fa-regular fa-clock text-cyan-400"></i>
+            <span id="live-clock">--:--:--</span>
+          </div>
+
+          <!-- Live Database Status -->
+          <div id="db-connection-status"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] font-mono-code text-slate-400">
+            <i class="fa-solid fa-circle-notch fa-spin text-cyan-400"></i>
+            <span>Connecting DB...</span>
+          </div>
+
+          <!-- OCR Scanner Button (added feature only) -->
+          <button onclick="openOCRScanner()"
+            class="btn-neo px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 border border-purple-500/40 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20">
+            <i class="fa-solid fa-camera-retro"></i>
+            <span class="hidden sm:inline">OCR Scanner</span>
+          </button>
+
+          <!-- Add New Medicine Button -->
+          <button onclick="openModal('add-stock-modal')"
+            class="btn-neo btn-neo-green px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-plus font-bold"></i>
+            <span class="hidden sm:inline">Add Stock</span>
+          </button>
+
+          <!-- Quick Jump to POS Button -->
+          <a href="#pos-billing-section"
+            class="btn-neo btn-neo-blue px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span class="hidden sm:inline">POS Bill</span>
+            <span id="pos-cart-count"
+              class="px-1.5 py-0.2 rounded-full bg-slate-950 text-cyan-300 text-[10px] font-mono-code font-bold">0</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- DASHBOARD BODY CONTAINER -->
+      <div class="p-4 md:p-8 space-y-6 flex-1">
+
+        <!-- ===================================================================== -->
+        <!-- SECTION 1: INTERACTIVE EXPIRY ALERT BAR (Top Priority Alert Strip) -->
+        <!-- ===================================================================== -->
+        <div id="expiry-alert-ribbon">
+          <!-- Dynamically populated by renderExpiryAlertBar() -->
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- SECTION 2: DYNAMIC DASHBOARD OVERVIEW (METRIC CARDS) -->
+        <!-- ===================================================================== -->
+        <section id="dashboard-overview">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-lg font-space font-black tracking-tight text-white flex items-center gap-2">
+                <i class="fa-solid fa-gauge-high text-[#00D2FF]"></i>
+                Inventory Pulse & Real-Time Metrics
+              </h2>
+              <p class="text-xs text-slate-400">System automated tracking of stock levels, revenue velocity, and FEFO
+                expiry safeguards.</p>
+            </div>
+            <div class="hidden sm:flex items-center gap-2 text-xs">
+              <span
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/10 text-[#00F59B] border border-emerald-500/20 font-mono-code font-bold text-[11px]">
+                <i class="fa-solid fa-check-circle"></i> FEFO Active
+              </span>
+            </div>
+          </div>
+
+          <!-- 4 Grid Metric Cards (Neo-brutalist Glassmorphism) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Metric 1: Total Inventory -->
+            <div id="metric-total-inventory"
+              class="glass-panel rounded-2xl p-5 border-l-4 border-l-[#00F59B] hover:border-slate-600 transition-all">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Metric 2: Low Stock Warning -->
+            <div id="metric-low-stock"
+              class="glass-panel rounded-2xl p-5 border-l-4 border-l-[#FFB800] hover:border-slate-600 transition-all">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Metric 3: Expiring Soon (30 Days) -->
+            <div id="metric-expiring-soon"
+              class="glass-panel rounded-2xl p-5 border-l-4 border-l-[#FF2E63] hover:border-slate-600 transition-all">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Metric 4: Total Revenue -->
+            <div id="metric-total-revenue"
+              class="glass-panel rounded-2xl p-5 border-l-4 border-l-[#00D2FF] hover:border-slate-600 transition-all">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- TWO COLUMN LAYOUT: SMART TRACKER (Left) + QUICK POS WIDGET (Right) -->
+        <!-- ===================================================================== -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+          <!-- =================================================================== -->
+          <!-- LEFT 8 COLS: SMART EXPIRY TRACKER SECTION -->
+          <!-- =================================================================== -->
+          <div class="lg:col-span-8 space-y-4" id="expiry-tracker-section">
+
+            <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+
+              <!-- Section Header & Filter Tabs -->
+              <div
+                class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div>
+                  <h3 class="font-space font-black text-lg text-white flex items-center gap-2">
+                    <i class="fa-solid fa-radar text-[#FFB800]"></i>
+                    Smart Expiry Tracker & Catalog
+                  </h3>
+                  <p class="text-xs text-slate-400 mt-0.5">Interactive shelf-life monitor with batch verification and
+                    quick action tags.</p>
+                </div>
+
+                <!-- Tabs: Expiring Soon, Expired, Full Inventory, Low Stock -->
+                <div
+                  class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs w-full sm:w-auto overflow-x-auto">
+                  <button id="tab-btn-expiring_soon" onclick="setFilterTab('expiring_soon')"
+                    class="tab-btn active px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all">
+                    <span>Expiring &le; 30d</span>
+                    <span id="badge-tab-expiring"
+                      class="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono-code font-bold">0</span>
+                  </button>
+
+                  <button id="tab-btn-expired" onclick="setFilterTab('expired')"
+                    class="tab-btn px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white flex items-center gap-1.5 transition-all">
+                    <span>Expired</span>
+                    <span id="badge-tab-expired"
+                      class="px-1.5 py-0.2 rounded-full bg-red-500/20 text-red-400 text-[10px] font-mono-code font-bold">0</span>
+                  </button>
+
+                  <button id="tab-btn-all" onclick="setFilterTab('all')"
+                    class="tab-btn px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white flex items-center gap-1.5 transition-all">
+                    <span>Full Inventory</span>
+                    <span id="badge-tab-all"
+                      class="px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono-code font-bold">0</span>
+                  </button>
+
+                  <button id="tab-btn-low_stock" onclick="setFilterTab('low_stock')"
+                    class="tab-btn px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white flex items-center gap-1.5 transition-all">
+                    <span>Low Stock</span>
+                    <span id="badge-tab-low"
+                      class="px-1.5 py-0.2 rounded-full bg-orange-500/20 text-orange-400 text-[10px] font-mono-code font-bold">0</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Filter Toolbar (Live Search, Category, Sort, View Toggle) -->
+              <div class="py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <!-- Search & Category -->
+                <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+                  <div class="relative flex-1 min-w-[180px]">
+                    <i
+                      class="fa-solid fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]"></i>
+                    <input id="tracker-search-input" type="text" placeholder="Filter by drug name or batch..."
+                      class="w-full pl-8 pr-3 py-1.5 rounded-lg glass-input text-xs">
+                  </div>
+
+                  <!-- Category select -->
+                  <select id="category-filter-select" class="glass-input rounded-lg py-1.5 px-3 text-xs text-slate-200">
+                    <option value="All">All Categories</option>
+                  </select>
+
+                  <!-- Sort By -->
+                  <select id="sort-by-select"
+                    class="glass-input rounded-lg py-1.5 px-3 text-xs text-slate-200 font-mono-code">
+                    <option value="expDate_asc">Sort: Earliest Expiry (FEFO)</option>
+                    <option value="expDate_desc">Sort: Latest Expiry</option>
+                    <option value="stock_asc">Sort: Stock: Low to High</option>
+                    <option value="stock_desc">Sort: Stock: High to Low</option>
+                    <option value="name_asc">Sort: Name (A-Z)</option>
+                  </select>
+                </div>
+
+                <!-- Right: View switch (Cards vs Table) & count -->
+                <div class="flex items-center gap-3">
+                  <span id="tracker-results-count" class="text-slate-400 font-mono-code text-[11px]">Loading...</span>
+                  <div class="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800">
+                    <button id="view-cards-btn" onclick="setViewMode('cards')"
+                      class="px-2.5 py-1 rounded bg-[#00D2FF] text-slate-950 font-bold text-xs" title="Grid Card View">
+                      <i class="fa-solid fa-grip"></i>
+                    </button>
+                    <button id="view-table-btn" onclick="setViewMode('table')"
+                      class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 hover:text-white font-medium text-xs"
+                      title="Compact Table View">
+                      <i class="fa-solid fa-table-list"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Render Target: Cards or Table -->
+              <div id="inventory-render-target" class="mt-2 min-h-[300px]">
+                <!-- Dynamically populated by renderExpiryTracker() -->
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- =================================================================== -->
+          <!-- RIGHT 4 COLS: QUICK BILLING & POS WIDGET -->
+          <!-- =================================================================== -->
+          <div class="lg:col-span-4 space-y-4" id="pos-billing-section">
+            <div
+              class="glass-panel rounded-2xl p-5 border-2 border-cyan-500/40 shadow-xl shadow-cyan-950/20 sticky top-20">
+
+              <!-- POS Header -->
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-[#00D2FF]/20 border border-[#00D2FF]/40 flex items-center justify-center text-[#00D2FF]">
+                    <i class="fa-solid fa-cash-register"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-space font-black text-base text-white">Smart POS Billing</h3>
+                    <p class="text-[10px] text-slate-400 font-mono-code">FEFO Batch Auto-Selected</p>
+                  </div>
+                </div>
+                <button onclick="clearCart()" class="text-xs text-slate-400 hover:text-red-400 transition-colors"
+                  title="Clear Bill">
+                  <i class="fa-solid fa-arrow-rotate-left mr-1"></i> Clear
+                </button>
+              </div>
+
+              <!-- Customer & Prescription Info Inputs -->
+              <div class="grid grid-cols-2 gap-2 my-3 text-xs">
+                <div>
+                  <label class="text-[10px] font-bold uppercase text-slate-400 block mb-1">Customer</label>
+                  <input id="pos-customer-input" type="text" placeholder="Walk-in Customer"
+                    class="w-full py-1.5 px-2.5 rounded-lg glass-input text-xs" value="Walk-in Customer">
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold uppercase text-slate-400 block mb-1">Doctor / Rx #</label>
+                  <input id="pos-rx-input" type="text" placeholder="Optional Rx Ref"
+                    class="w-full py-1.5 px-2.5 rounded-lg glass-input text-xs font-mono-code">
+                </div>
+              </div>
+
+              <!-- Cart Item List -->
+              <div class="space-y-2 my-3 max-h-[280px] overflow-y-auto pr-1" id="pos-cart-items">
+                <!-- Populated by renderCart() -->
+              </div>
+
+              <!-- Financial Breakdown -->
+              <div class="pt-3 border-t border-slate-800/80 space-y-2 text-xs font-mono-code">
+                <div class="flex justify-between text-slate-300">
+                  <span>Subtotal:</span>
+                  <span id="pos-subtotal" class="font-bold text-white">₹0.00</span>
+                </div>
+
+                <div class="flex items-center justify-between text-slate-300">
+                  <div class="flex items-center gap-1.5">
+                    <span>Tax / GST:</span>
+                    <select id="pos-tax-select"
+                      class="glass-input rounded px-1.5 py-0.5 text-[11px] bg-slate-900 text-slate-200">
+                      <option value="0.05">GST 5%</option>
+                      <option value="0.12" selected>GST 12%</option>
+                      <option value="0.18">GST 18%</option>
+                      <option value="0">0% Exempt</option>
+                    </select>
+                  </div>
+                  <span id="pos-tax-amount" class="text-slate-300">₹0.00</span>
+                </div>
+
+                <div class="flex justify-between text-emerald-400">
+                  <span>Discount:</span>
+                  <span id="pos-discount-amount" class="font-bold">-₹0.00</span>
+                </div>
+
+                <!-- Grand Total -->
+                <div class="pt-2 border-t border-slate-800 flex items-baseline justify-between">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">Payable Total</span>
+                    <span class="text-xs text-cyan-400 font-sans font-semibold">Incl. All Taxes</span>
+                  </div>
+                  <div id="pos-grand-total" class="font-space font-black text-2xl text-[#00D2FF] tracking-tight">
+                    ₹0.00
+                  </div>
+                </div>
+              </div>
+
+              <!-- Payment Method Selector -->
+              <div class="mt-4 pt-3 border-t border-slate-800">
+                <label class="text-[10px] font-bold uppercase text-slate-400 block mb-1.5">Payment Method</label>
+                <div class="grid grid-cols-4 gap-1.5 text-xs text-center font-semibold">
+                  <button type="button" data-method="UPI / QR"
+                    class="payment-method-btn active py-1.5 px-1 rounded-lg border border-[#00D2FF] bg-[#00D2FF]/20 text-white text-[11px] transition-all">
+                    <i class="fa-solid fa-qrcode block mb-0.5"></i> UPI / QR
+                  </button>
+                  <button type="button" data-method="Card"
+                    class="payment-method-btn py-1.5 px-1 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white text-[11px] transition-all">
+                    <i class="fa-solid fa-credit-card block mb-0.5"></i> Card
+                  </button>
+                  <button type="button" data-method="Cash"
+                    class="payment-method-btn py-1.5 px-1 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white text-[11px] transition-all">
+                    <i class="fa-solid fa-money-bill-wave block mb-0.5"></i> Cash
+                  </button>
+                  <button type="button" data-method="Insurance"
+                    class="payment-method-btn py-1.5 px-1 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white text-[11px] transition-all">
+                    <i class="fa-solid fa-file-shield block mb-0.5"></i> Insur.
+                  </button>
+                </div>
+              </div>
+
+              <!-- Main Checkout & Print Button -->
+              <div class="mt-4">
+                <button id="pos-checkout-btn" onclick="completeSaleAndPrintBill()"
+                  class="btn-neo btn-neo-green w-full py-3 px-4 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+                  <i class="fa-solid fa-receipt text-sm"></i>
+                  <span>Complete Sale & Print Bill</span>
+                </button>
+              </div>
+
+              <!-- FEFO Guard Note -->
+              <div
+                class="mt-3 flex items-center gap-2 text-[10px] text-slate-400 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+                <i class="fa-solid fa-shield-halved text-[#00F59B]"></i>
+                <span>FEFO Rule prevents expired drug dispensing automatically.</span>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- SECTION 4: INTERACTIVE ANALYTICS & LOSS MANAGEMENT -->
+        <!-- ===================================================================== -->
+        <section id="analytics-section" class="pt-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-space font-black tracking-tight text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-column text-purple-400"></i>
+                Pharmacy Financial & Shelf-Loss Intelligence
+              </h2>
+              <p class="text-xs text-slate-400">Comparative trends between Gross Sales Revenue vs Expired Stock
+                Write-Off Losses.</p>
+            </div>
+            <div class="text-xs font-mono-code text-slate-400">
+              Audited FEFO Metrics
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Chart 1: Monthly Sales vs Expired Losses (8 Cols) -->
+            <div
+              class="lg:col-span-7 glass-panel rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h4 class="font-bold text-white text-sm">Monthly Sales vs. Expired Stock Losses</h4>
+                  <p class="text-xs text-slate-400">Observe how losses drop as proactive 30-day alerts clear stock.</p>
+                </div>
+                <span class="text-xs font-mono-code px-2 py-0.5 rounded bg-slate-800 text-slate-300">Last 6
+                  Months</span>
+              </div>
+              <div class="h-64 relative">
+                <canvas id="chart-sales-loss"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 2: Top 5 Fast-Moving Medicines (5 Cols) -->
+            <div
+              class="lg:col-span-5 glass-panel rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h4 class="font-bold text-white text-sm">Top 5 Fast-Moving Medicines</h4>
+                  <p class="text-xs text-slate-400">Highest sales velocity items requiring frequent restock.</p>
+                </div>
+                <span
+                  class="text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Velocity</span>
+              </div>
+              <div class="h-64 relative">
+                <canvas id="chart-fast-moving"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Row: Shelf Health Doughnut + Quick Audit Tips -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col items-center justify-between">
+              <div class="w-full flex items-center justify-between mb-1">
+                <h5 class="font-bold text-xs text-white">Stock Expiry Risk Breakdown</h5>
+                <span class="text-[10px] font-mono-code text-cyan-400">Live SKUs</span>
+              </div>
+              <div class="h-44 w-full relative">
+                <canvas id="chart-risk-doughnut"></canvas>
+              </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+              <div class="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider mb-2">
+                <i class="fa-solid fa-lightbulb"></i> FEFO Optimization Recommendation
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                By bundling near-expiry medicines with clearance discounts (<b class="text-white">15% - 30%</b>),
+                PharmaPulse has curbed pharmacy inventory write-off losses by <span
+                  class="text-[#00F59B] font-bold">74%</span> over the last two quarters.
+              </p>
+              <div class="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+                <span class="text-slate-400 font-mono-code">Status: Optimal</span>
+                <button onclick="setFilterTab('expiring_soon')"
+                  class="text-[#00D2FF] hover:underline font-semibold">Review Alert Batches &rarr;</button>
+              </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+              <div class="flex items-center gap-2 text-[#00D2FF] text-xs font-bold uppercase tracking-wider mb-2">
+                <i class="fa-solid fa-barcode"></i> Regulatory & Compliance Audit
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                All scheduled H1 & narcotic substances require prescription verification before sale. Batch disposal
+                requires dual-witness pharmacist signoff logged with tax audit IDs.
+              </p>
+              <div class="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+                <button onclick="exportInventoryCSV()"
+                  class="btn-neo btn-neo-blue py-1 px-3 rounded-lg text-xs flex items-center gap-1">
+                  <i class="fa-solid fa-download"></i> Download Audit Dossier
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- APP FOOTER -->
+      <footer
+        class="mt-8 border-t border-slate-800/80 bg-[#0a0f1d] px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+        <div class="flex items-center gap-2 font-mono-code">
+          <span class="w-2 h-2 rounded-full bg-[#00F59B]"></span>
+          <span class="text-white font-bold">PharmaPulse System v2.4</span> &bull;
+          <span>Neo-Brutalist Pharmacy OS</span>
+        </div>
+        <div class="flex items-center gap-4 text-xs">
+          <span>Dark Mode Active</span>
+          <span>&bull;</span>
+          <button onclick="resetToDefaultData()" class="hover:text-white transition-colors">Reset Dataset</button>
+          <span>&bull;</span>
+          <span class="text-cyan-400 font-mono-code">FEFO Core Engine</span>
+        </div>
+      </footer>
+
+    </main>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- OCR SCANNER MODAL (ADDED FEATURE ONLY) -->
+  <!-- ========================================================================= -->
+  <div id="ocr-scanner-modal"
+    class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div
+      class="glass-panel rounded-2xl max-w-2xl w-full p-6 border-2 border-purple-500/40 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-300 flex items-center justify-center border border-purple-500/30">
+            <i class="fa-solid fa-camera-retro"></i>
+          </div>
+          <div>
+            <h3 class="font-space font-bold text-lg text-white">OCR Medicine Scanner</h3>
+            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-mono-code">Read medicine label
+              information from an image</p>
+          </div>
+        </div>
+        <button onclick="closeOCRScanner()" class="text-slate-400 hover:text-white transition-colors">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-4">
+        <div
+          class="ocr-drop-zone rounded-2xl border border-dashed border-purple-500/40 bg-purple-500/5 p-5 text-center">
+          <i class="fa-solid fa-file-image text-3xl text-purple-300 mb-2"></i>
+          <h4 class="font-bold text-white text-sm">Upload or Capture Medicine Image</h4>
+          <p class="text-xs text-slate-400 mt-1">For best results, keep the medicine label clear and well lit.</p>
+          <div class="flex flex-wrap justify-center gap-2 mt-4">
+            <label for="ocr-image-input"
+              class="btn-neo px-4 py-2 rounded-lg text-xs font-bold border border-purple-500/40 bg-purple-500/10 text-purple-200 cursor-pointer">
+              <i class="fa-solid fa-upload mr-1.5"></i> Choose Image
+            </label>
+            <label for="ocr-camera-input"
+              class="btn-neo px-4 py-2 rounded-lg text-xs font-bold border border-cyan-500/40 bg-cyan-500/10 text-cyan-200 cursor-pointer">
+              <i class="fa-solid fa-camera mr-1.5"></i> Use Camera
+            </label>
+          </div>
+          <input id="ocr-image-input" type="file" accept="image/*" class="hidden">
+          <input id="ocr-camera-input" type="file" accept="image/*" capture="environment" class="hidden">
+        </div>
+
+        <div id="ocr-preview-wrap" class="hidden rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Selected Image</span>
+            <button type="button" onclick="clearOCRImage()"
+              class="text-[10px] text-slate-400 hover:text-white">Clear</button>
+          </div>
+          <img id="ocr-preview-image" class="ocr-preview-image" alt="Medicine image preview">
+        </div>
+
+        <div id="ocr-progress-wrap" class="hidden rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+          <div class="flex items-center justify-between text-xs mb-2">
+            <span id="ocr-status-text" class="text-slate-300">Preparing OCR...</span>
+            <span id="ocr-progress-text" class="font-mono-code text-purple-300">0%</span>
+          </div>
+          <div class="progress-shelf">
+            <div id="ocr-progress-bar" class="progress-shelf-bar bg-purple-400" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div id="ocr-results-wrap" class="hidden space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-space font-bold text-white text-sm">
+              <i class="fa-solid fa-wand-magic-sparkles text-purple-300 mr-1.5"></i>Extracted Information
+            </h4>
+            <span
+              class="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-md">Verify
+              before saving</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="ocr-result-field">
+              <label>Medicine Name</label>
+              <input id="ocr-result-name" class="glass-input rounded-lg py-2 px-3 w-full text-xs"
+                placeholder="Not detected">
+            </div>
+            <div class="ocr-result-field">
+              <label>Batch Number</label>
+              <input id="ocr-result-batch" class="glass-input rounded-lg py-2 px-3 w-full text-xs font-mono-code"
+                placeholder="Not detected">
+            </div>
+            <div class="ocr-result-field">
+              <label>Manufacturing Date</label>
+              <input id="ocr-result-mfd" class="glass-input rounded-lg py-2 px-3 w-full text-xs"
+                placeholder="Not detected">
+            </div>
+            <div class="ocr-result-field">
+              <label>Expiry Date</label>
+              <input id="ocr-result-exp" class="glass-input rounded-lg py-2 px-3 w-full text-xs"
+                placeholder="Not detected">
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Raw OCR Text</label>
+            <textarea id="ocr-raw-text" rows="6"
+              class="glass-input rounded-lg py-2 px-3 w-full text-xs mt-1 font-mono-code" readonly></textarea>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+            <button type="button" onclick="clearOCRResults()"
+              class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold">Clear</button>
+            <button type="button" onclick="useOCRForAddStock()"
+              class="btn-neo btn-neo-green px-4 py-2 rounded-lg text-xs font-bold">
+              <i class="fa-solid fa-arrow-right mr-1.5"></i>Use in Add Stock
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: ADD NEW STOCK / MEDICINE -->
+  <!-- ========================================================================= -->
+  <div id="add-stock-modal"
+    class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-lg w-full p-6 border-2 border-slate-700 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-[#00F59B]/20 text-[#00F59B] flex items-center justify-center">
+            <i class="fa-solid fa-box-archive text-xs"></i>
+          </div>
+          <h3 class="font-space font-bold text-lg text-white">Enroll New Medicine Batch</h3>
+        </div>
+        <button onclick="closeModal('add-stock-modal')" class="text-slate-400 hover:text-white transition-colors">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <form id="add-medicine-form" class="mt-4 space-y-3.5 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2">
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Commercial Medicine Name *</label>
+            <input id="add-name" required type="text" placeholder="e.g. Paracetamol 650mg (Dolo)"
+              class="w-full glass-input rounded-lg py-2 px-3">
+          </div>
+
+          <div class="col-span-2">
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Generic Formula /
+              Composition</label>
+            <input id="add-generic" type="text" placeholder="e.g. Paracetamol BP 650mg"
+              class="w-full glass-input rounded-lg py-2 px-3">
+          </div>
+
+          <div>
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Therapeutic Category</label>
+            <select id="add-category" class="w-full glass-input rounded-lg py-2 px-3">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Batch Number *</label>
+            <input id="add-batch" required type="text" placeholder="e.g. PCM-980"
+              class="w-full glass-input rounded-lg py-2 px-3 font-mono-code uppercase">
+          </div>
+
+          <div>
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Manufacturing Date</label>
+            <input id="add-mfd" type="date"
+              class="w-full glass-input rounded-lg py-2 px-3 font-mono-code text-slate-300">
+          </div>
+
+          <div>
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Expiry Date *</label>
+            <input id="add-exp" required type="date"
+              class="w-full glass-input rounded-lg py-2 px-3 font-mono-code text-white border-amber-500/50">
+          </div>
+
+          <div>
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Enrolled Stock Quantity *</label>
+            <input id="add-stock" required type="number" min="1" placeholder="e.g. 50"
+              class="w-full glass-input rounded-lg py-2 px-3 font-mono-code">
+          </div>
+
+          <div>
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Min. Reorder Threshold</label>
+            <input id="add-min-threshold" type="number" min="1" value="20"
+              class="w-full glass-input rounded-lg py-2 px-3 font-mono-code">
+          </div>
+
+          <div>
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Unit MRP Selling Price (₹)
+              *</label>
+            <input id="add-price" required type="number" step="0.01" min="0.1" placeholder="3.50"
+              class="w-full glass-input rounded-lg py-2 px-3 font-mono-code">
+          </div>
+
+          <div>
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Unit Cost Price (₹)</label>
+            <input id="add-cost" type="number" step="0.01" min="0" placeholder="2.10"
+              class="w-full glass-input rounded-lg py-2 px-3 font-mono-code">
+          </div>
+
+          <div>
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Rack / Storage Location</label>
+            <input id="add-rack" type="text" placeholder="e.g. Rack A-02"
+              class="w-full glass-input rounded-lg py-2 px-3">
+          </div>
+
+          <div>
+            <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Supplier / Wholesaler</label>
+            <input id="add-supplier" type="text" placeholder="e.g. Micro Labs Healthcare"
+              class="w-full glass-input rounded-lg py-2 px-3">
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center gap-2">
+          <input id="add-rx-required" type="checkbox"
+            class="w-4 h-4 rounded border-slate-700 text-cyan-500 bg-slate-900 focus:ring-0">
+          <label for="add-rx-required" class="text-xs text-slate-300">Mandatory Doctor Prescription (Rx
+            Required)</label>
+        </div>
+
+        <div class="pt-4 border-t border-slate-700 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeModal('add-stock-modal')"
+            class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white font-medium">
+            Cancel
+          </button>
+          <button type="submit" class="btn-neo btn-neo-green px-5 py-2 rounded-lg font-bold">
+            <i class="fa-solid fa-check mr-1.5"></i> Add to Inventory
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: THERMAL PRINT RECEIPT & TAX INVOICE -->
+  <!-- ========================================================================= -->
+  <div id="thermal-receipt-modal"
+    class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div
+      class="glass-panel rounded-2xl max-w-md w-full p-6 border-2 border-slate-700 shadow-2xl relative max-h-[90vh] flex flex-col justify-between">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-700 mb-4 no-print">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+          <h3 class="font-space font-bold text-white text-base">Sale Receipt & Tax Invoice</h3>
+        </div>
+        <button onclick="closeModal('thermal-receipt-modal')" class="text-slate-400 hover:text-white transition-colors">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Receipt Content Paper Container -->
+      <div id="thermal-receipt-content" class="overflow-y-auto max-h-[60vh] pr-1 py-1">
+        <!-- Generated by renderThermalReceipt() -->
+      </div>
+
+      <!-- Receipt Actions Footer -->
+      <div class="mt-4 pt-3 border-t border-slate-700 flex items-center justify-between gap-3 no-print">
+        <button onclick="closeModal('thermal-receipt-modal')"
+          class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold">
+          Dismiss
+        </button>
+        <button onclick="window.print()"
+          class="btn-neo btn-neo-blue px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-print"></i> Print Thermal Receipt
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 3: MEDICINE DETAILS DOSSIER -->
+  <!-- ========================================================================= -->
+  <div id="details-modal"
+    class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-lg w-full p-6 border-2 border-slate-700 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-2 mb-2">
+        <span class="text-xs font-mono-code text-cyan-400 font-bold uppercase tracking-wider">Batch Dossier &
+          Analytics</span>
+        <button onclick="closeModal('details-modal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+      <div id="details-modal-content">
+        <!-- Injected by viewMedicineDetails() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 4: DISPOSAL / WRITE-OFF CONFIRMATION -->
+  <!-- ========================================================================= -->
+  <div id="dispose-modal"
+    class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 border-2 border-red-500/80 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+        <div class="flex items-center gap-2 text-[#FF2E63]">
+          <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+          <h3 class="font-space font-bold text-base text-white">Log Stock Write-Off & Disposal</h3>
+        </div>
+        <button onclick="closeModal('dispose-modal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-3 text-xs">
+        <div id="dispose-item-info" class="p-3 rounded-lg bg-red-950/20 border border-red-500/30 text-slate-300">
+          <!-- Injected by openDisposeModal() -->
+        </div>
+
+        <div>
+          <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Quantity to Quarantine /
+            Destroy</label>
+          <input id="dispose-qty-input" type="number" min="1"
+            class="w-full glass-input rounded-lg py-2 px-3 font-mono-code">
+        </div>
+
+        <div>
+          <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Regulatory Reason for
+            Write-Off</label>
+          <select id="dispose-reason-select" class="w-full glass-input rounded-lg py-2 px-3">
+            <option value="Expired Shelf-Life">Expired Shelf-Life (FEFO Violation)</option>
+            <option value="Damaged Packaging">Damaged Packaging / Seal Broken</option>
+            <option value="Temperature Excursion">Cold-Chain Temperature Excursion</option>
+            <option value="Product Recall">Manufacturer Product Recall</option>
+          </select>
+        </div>
+
+        <p class="text-[11px] text-slate-400 italic">
+          * This action will deduct units from inventory and register monetary losses under Pharmacy Financial
+          Analytics.
+        </p>
+
+        <div class="pt-4 border-t border-slate-700 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeModal('dispose-modal')"
+            class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white">
+            Cancel
+          </button>
+          <button type="button" onclick="confirmDisposeItem()"
+            class="btn-neo btn-neo-crimson px-5 py-2 rounded-lg font-bold">
+            <i class="fa-solid fa-trash-can mr-1.5"></i> Confirm Disposal
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 5: QUICK CLEARANCE DISCOUNT -->
+  <!-- ========================================================================= -->
+  <div id="discount-modal"
+    class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-sm w-full p-6 border-2 border-amber-500/80 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+        <div class="flex items-center gap-2 text-amber-400">
+          <i class="fa-solid fa-tag text-base"></i>
+          <h3 class="font-space font-bold text-base text-white">Apply Clearance Tag</h3>
+        </div>
+        <button onclick="closeModal('discount-modal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-3 text-xs">
+        <div id="discount-item-info" class="p-3 rounded-lg bg-amber-950/20 border border-amber-500/30 text-slate-300">
+          <!-- Injected by openDiscountModal() -->
+        </div>
+
+        <div>
+          <label class="block font-bold uppercase text-slate-400 text-[10px] mb-1">Clearance Discount Percentage</label>
+          <select id="discount-percentage-select"
+            class="w-full glass-input rounded-lg py-2 px-3 font-mono-code font-bold text-amber-300">
+            <option value="15">15% Off (Early Warning Clearance)</option>
+            <option value="25" selected>25% Off (Recommended Clearance)</option>
+            <option value="40">40% Off (Urgent 10-Day Clearance)</option>
+            <option value="50">50% Off (Flash Sell-out)</option>
+          </select>
+        </div>
+
+        <div class="pt-4 border-t border-slate-700 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeModal('discount-modal')"
+            class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white">
+            Cancel
+          </button>
+          <button type="button" onclick="applyCustomDiscount()"
+            class="btn-neo bg-[#FFB800] text-black border-[#d49900] px-5 py-2 rounded-lg font-bold">
+            <i class="fa-solid fa-check mr-1.5"></i> Apply Discount
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+      // Ensure token is checked before doing anything else
+      (function checkAuth() {
+        const user = API.getLoggedInUser();
+        if (!user && window.location.pathname !== '/login.html') {
+          window.location.href = 'login.html';
+        } else if (user) {
+          const usernameEl = document.getElementById('logged-in-username');
+          if (usernameEl) {
+            usernameEl.textContent = user.username + (user.role === 'staff' ? '' : ` (${user.role})`);
+          }
+        }
+      })();
+  </script>
+</body>
+
+</html>

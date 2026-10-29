@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PharmaPulse — Authentication</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            neonGreen: '#00F59B',
+            neonCrimson: '#FF2E63',
+            neonAmber: '#FFB800',
+            neonBlue: '#00D2FF',
+            darkObsidian: '#070b14',
+            darkSlate: '#0f172a'
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+            space: ['"Space Grotesk"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-[#070b14] text-slate-100 antialiased h-screen flex items-center justify-center relative overflow-hidden">
+  
+  <!-- Ambient Glow Effects -->
+  <div class="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-neonBlue/10 rounded-full blur-[120px] pointer-events-none"></div>
+  <div class="absolute bottom-[-20%] right-[-10%] w-[40vw] h-[40vw] bg-neonGreen/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+  <div class="w-full max-w-md bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl relative z-10">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-neonBlue/20 text-neonBlue text-2xl mb-4">
+        <i class="fa-solid fa-heart-pulse"></i>
+      </div>
+      <h1 class="text-2xl font-space font-bold tracking-tight">PharmaPulse</h1>
+      <p class="text-slate-400 text-sm mt-1">Smart Pharmacy Management</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex border-b border-white/10 mb-6">
+      <button id="tab-login" class="flex-1 pb-3 text-sm font-semibold text-neonBlue border-b-2 border-neonBlue transition-colors">Login</button>
+      <button id="tab-signup" class="flex-1 pb-3 text-sm font-semibold text-slate-500 hover:text-slate-300 transition-colors">Sign Up</button>
+    </div>
+
+    <!-- Error Message -->
+    <div id="auth-error" class="hidden mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
+      <i class="fa-solid fa-circle-exclamation"></i>
+      <span id="auth-error-text"></span>
+    </div>
+
+    <!-- Login Form -->
+    <form id="login-form" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Username</label>
+        <input type="text" id="login-username" required class="w-full bg-[#070b14]/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-neonBlue focus:ring-1 focus:ring-neonBlue transition-all">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+        <input type="password" id="login-password" required class="w-full bg-[#070b14]/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-neonBlue focus:ring-1 focus:ring-neonBlue transition-all">
+      </div>
+      <button type="submit" class="w-full mt-4 bg-neonBlue text-black font-bold py-3 rounded-lg hover:bg-[#00bfff] transition-all shadow-[0_0_15px_rgba(0,210,255,0.3)] hover:shadow-[0_0_25px_rgba(0,210,255,0.5)]">
+        Sign In
+      </button>
+    </form>
+
+    <!-- Signup Form -->
+    <form id="signup-form" class="space-y-4 hidden">
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Username</label>
+        <input type="text" id="signup-username" required class="w-full bg-[#070b14]/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-neonGreen focus:ring-1 focus:ring-neonGreen transition-all">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email</label>
+        <input type="email" id="signup-email" required class="w-full bg-[#070b14]/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-neonGreen focus:ring-1 focus:ring-neonGreen transition-all">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+        <input type="password" id="signup-password" required class="w-full bg-[#070b14]/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-neonGreen focus:ring-1 focus:ring-neonGreen transition-all">
+      </div>
+      <button type="submit" class="w-full mt-4 bg-neonGreen text-black font-bold py-3 rounded-lg hover:bg-[#00d889] transition-all shadow-[0_0_15px_rgba(0,245,155,0.3)] hover:shadow-[0_0_25px_rgba(0,245,155,0.5)]">
+        Create Account
+      </button>
+    </form>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // Tab Switching
+    const tabLogin = document.getElementById('tab-login');
+    const tabSignup = document.getElementById('tab-signup');
+    const formLogin = document.getElementById('login-form');
+    const formSignup = document.getElementById('signup-form');
+    const errorBox = document.getElementById('auth-error');
+    const errorText = document.getElementById('auth-error-text');
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorBox.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorBox.classList.add('hidden');
+    }
+
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.replace('text-slate-500', 'text-neonBlue');
+      tabLogin.classList.replace('hover:text-slate-300', 'border-b-2');
+      tabLogin.classList.add('border-neonBlue');
+      
+      tabSignup.classList.replace('text-neonBlue', 'text-slate-500');
+      tabSignup.classList.remove('border-b-2', 'border-neonBlue');
+      tabSignup.classList.add('hover:text-slate-300');
+
+      formLogin.classList.remove('hidden');
+      formSignup.classList.add('hidden');
+      hideError();
+    });
+
+    tabSignup.addEventListener('click', () => {
+      tabSignup.classList.replace('text-slate-500', 'text-neonBlue');
+      tabSignup.classList.replace('hover:text-slate-300', 'border-b-2');
+      tabSignup.classList.add('border-neonBlue');
+      
+      tabLogin.classList.replace('text-neonBlue', 'text-slate-500');
+      tabLogin.classList.remove('border-b-2', 'border-neonBlue');
+      tabLogin.classList.add('hover:text-slate-300');
+
+      formSignup.classList.remove('hidden');
+      formLogin.classList.add('hidden');
+      hideError();
+    });
+
+    // Form Submissions
+    formLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+      const user = document.getElementById('login-username').value;
+      const pass = document.getElementById('login-password').value;
+      const btn = e.target.querySelector('button');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Authenticating...';
+      btn.disabled = true;
+
+      try {
+        await API.auth.login(user, pass);
+        window.location.href = 'index.html';
+      } catch (err) {
+        showError(err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    formSignup.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+      const user = document.getElementById('signup-username').value;
+      const email = document.getElementById('signup-email').value;
+      const pass = document.getElementById('signup-password').value;
+      const btn = e.target.querySelector('button');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating...';
+      btn.disabled = true;
+
+      try {
+        await API.auth.signup(user, email, pass);
+        // After signup, switch to login tab
+        tabLogin.click();
+        document.getElementById('login-username').value = user;
+        document.getElementById('login-password').value = '';
+        showError('Account created successfully! Please login.');
+        errorBox.classList.replace('bg-red-500/10', 'bg-green-500/10');
+        errorBox.classList.replace('border-red-500/20', 'border-green-500/20');
+        errorBox.classList.replace('text-red-400', 'text-green-400');
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
